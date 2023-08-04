@@ -10,8 +10,8 @@
     "@jridgewell/gen-mapping" "^0.3.0"
     "@jridgewell/trace-mapping" "^0.3.9"
 
-"@aztec/bb.js@file:../../../repos/aztec-packages/circuits/cpp/barretenberg/ts":
-  "resolved" "file:../../../repos/aztec-packages/circuits/cpp/barretenberg/ts"
+"@aztec/bb.js@file:../../repos/aztec-packages/circuits/cpp/barretenberg/ts":
+  "resolved" "file:../../repos/aztec-packages/circuits/cpp/barretenberg/ts"
   "version" "0.3.4"
   dependencies:
     "comlink" "^4.4.1"

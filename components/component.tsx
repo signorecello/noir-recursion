@@ -4,11 +4,12 @@ import { toast } from 'react-toastify';
 import Ethers from '../utils/ethers';
 import React from 'react';
 import { NoirBrowser } from '../utils/noir/noirBrowser';
+import { input } from '../input';
 
 import { ThreeDots } from 'react-loader-spinner';
 
 function Component() {
-  const [input, setInput] = useState({ x: '', y: '' });
+  const [userInput, setUserInput] = useState({ x: '', y: '' });
   const [pending, setPending] = useState(false);
   const [proof, setProof] = useState(Uint8Array.from([]));
   const [verification, setVerification] = useState(false);
@@ -17,17 +18,18 @@ function Component() {
   // Handles input state
   const handleChange = e => {
     e.preventDefault();
-    setInput({ ...input, [e.target.name]: e.target.value });
+    setUserInput({ ...userInput, [e.target.name]: e.target.value });
   };
 
   // Calculates proof
   const calculateProof = async () => {
     setPending(true);
-
     try {
+      console.time('generateProof');
       const witness = await noir.generateWitness(input);
       const proof = await noir.generateProof(witness);
       setProof(proof);
+      console.timeEnd('generateProof');
     } catch (err) {
       console.log(err);
       toast.error('Error generating proof');
@@ -47,16 +49,19 @@ function Component() {
         const ethers = new Ethers();
         const publicInputs = proof.slice(0, 32);
         const slicedProof = proof.slice(32);
+        console.log(publicInputs);
+        console.log(slicedProof);
 
-        const ver = await ethers.contract.verify(slicedProof, [publicInputs]);
-        if (ver) {
-          toast.success('Proof verified on-chain!');
-          setVerification(true);
-        } else {
-          toast.error('Proof failed on-chain verification');
-          setVerification(false);
-        }
+        // const ver = await ethers.contract.verify(slicedProof, [publicInputs]);
+        // if (ver) {
+        //   toast.success('Proof verified on-chain!');
+        //   setVerification(true);
+        // } else {
+        //   toast.error('Proof failed on-chain verification');
+        //   setVerification(false);
+        // }
       } catch (err) {
+        console.log(err);
         toast.error('Error verifying your proof');
       } finally {
         noir.destroy();
@@ -89,8 +94,8 @@ function Component() {
       <h1>Example starter</h1>
       <h2>This circuit checks that x and y are different</h2>
       <p>Try it!</p>
-      <input name="x" type={'text'} onChange={handleChange} value={input.x} />
-      <input name="y" type={'text'} onChange={handleChange} value={input.y} />
+      <input name="x" type={'text'} onChange={handleChange} value={userInput.x} />
+      <input name="y" type={'text'} onChange={handleChange} value={userInput.y} />
       <button onClick={calculateProof}>Calculate proof</button>
       {pending && <ThreeDots wrapperClass="spinner" color="#000000" height={100} width={100} />}
     </div>

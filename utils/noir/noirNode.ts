@@ -28,7 +28,7 @@ export class NoirNode {
     this.acirBuffer = Buffer.from(circuit.bytecode, 'base64');
     this.acirBufferUncompressed = decompressSync(this.acirBuffer);
 
-    this.api = await newBarretenbergApiAsync(4);
+    this.api = await newBarretenbergApiAsync(8);
 
     const [exact, total, subgroup] = await this.api.acirGetCircuitSizes(
       this.acirBufferUncompressed,
@@ -45,10 +45,11 @@ export class NoirNode {
     this.acirComposer = await this.api.acirNewAcirComposer(subgroupSize);
   }
 
-  async generateWitness(input: any): Promise<Uint8Array> {
+  async generateWitness(input: string[]): Promise<Uint8Array> {
     const initialWitness = new Map<number, string>();
-    initialWitness.set(1, ethers.utils.hexZeroPad(`0x${input.x.toString(16)}`, 32));
-    initialWitness.set(2, ethers.utils.hexZeroPad(`0x${input.y.toString(16)}`, 32));
+    for (let i = 1; i <= input.length; i++) {
+      initialWitness.set(i, input[i - 1]);
+    }
 
     const witnessMap = await executeCircuit(this.acirBuffer, initialWitness, () => {
       throw Error('unexpected oracle');
@@ -63,14 +64,14 @@ export class NoirNode {
       this.acirComposer,
       this.acirBufferUncompressed,
       decompressSync(witness),
-      false,
+      true,
     );
     return proof;
   }
 
   async verifyProof(proof: Uint8Array) {
     await this.api.acirInitProvingKey(this.acirComposer, this.acirBufferUncompressed);
-    const verified = await this.api.acirVerifyProof(this.acirComposer, proof, false);
+    const verified = await this.api.acirVerifyProof(this.acirComposer, proof, true);
     return verified;
   }
 

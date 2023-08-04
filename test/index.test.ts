@@ -6,8 +6,9 @@ import { NoirNode } from '../utils/noir/noirNode';
 import { execSync } from 'child_process';
 
 const noir = new NoirNode();
-import verifier from '../artifacts/circuits/contract/plonk_vk.sol/UltraVerifier.json';
+import verifier from '../artifacts/circuits/contract/recursion/plonk_vk.sol/UltraVerifier.json';
 
+import { input } from '../input';
 import { test, beforeAll, describe } from 'vitest';
 
 describe('It compiles noir program code, receiving circuit bytes and abi object.', () => {
@@ -28,7 +29,6 @@ describe('It compiles noir program code, receiving circuit bytes and abi object.
   });
 
   it('Should generate valid proof for correct input', async () => {
-    const input = { x: 1, y: 2 };
     await noir.init();
     const witness = await noir.generateWitness(input);
     const proof = await noir.generateProof(witness);
