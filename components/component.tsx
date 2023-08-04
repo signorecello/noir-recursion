@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 
 import { toast } from 'react-toastify';
-import Ethers from '../utils/ethers';
 import React from 'react';
 import { NoirBrowser } from '../utils/noir/noirBrowser';
 import { input } from '../input';
@@ -42,24 +41,10 @@ function Component() {
     // only launch if we do have an acir and a proof to verify
     if (proof) {
       try {
+        console.log(proof);
         const verification = await noir.verifyProof(proof);
         setVerification(verification);
         toast.success('Proof verified!');
-
-        const ethers = new Ethers();
-        const publicInputs = proof.slice(0, 32);
-        const slicedProof = proof.slice(32);
-        console.log(publicInputs);
-        console.log(slicedProof);
-
-        // const ver = await ethers.contract.verify(slicedProof, [publicInputs]);
-        // if (ver) {
-        //   toast.success('Proof verified on-chain!');
-        //   setVerification(true);
-        // } else {
-        //   toast.error('Proof failed on-chain verification');
-        //   setVerification(false);
-        // }
       } catch (err) {
         console.log(err);
         toast.error('Error verifying your proof');

@@ -70,7 +70,7 @@ export class NoirNode {
   }
 
   async verifyProof(proof: Uint8Array) {
-    await this.api.acirInitProvingKey(this.acirComposer, this.acirBufferUncompressed);
+    // await this.api.acirInitProvingKey(this.acirComposer, this.acirBufferUncompressed);
     const verified = await this.api.acirVerifyProof(this.acirComposer, proof, true);
     return verified;
   }

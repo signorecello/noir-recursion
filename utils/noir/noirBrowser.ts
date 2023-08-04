@@ -8,8 +8,7 @@ import {
   RawBuffer,
 } from '@aztec/bb.js/dest/browser/index.js';
 import initACVM, { executeCircuit, compressWitness } from '@noir-lang/acvm_js';
-import { ethers } from 'ethers'; // I'm lazy so I'm using ethers to pad my input
-import circuit from '../../circuits/target/noirstarter.json';
+import circuit from '../../circuits/target/recursion.json';
 import { Ptr } from '@aztec/bb.js/dest/node/types';
 
 export class NoirBrowser {
@@ -72,13 +71,7 @@ export class NoirBrowser {
   }
 
   async verifyProof(proof: Uint8Array) {
-    console.log('proving key init');
-    await this.api.acirInitProvingKey(this.acirComposer, this.acirBufferUncompressed);
-    console.log('proving key init ok');
-    console.log('proof:');
-    console.log(proof);
     const verified = await this.api.acirVerifyProof(this.acirComposer, proof, true);
-    console.log('proof verified');
     return verified;
   }
 
