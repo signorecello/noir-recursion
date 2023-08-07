@@ -3,85 +3,131 @@ import { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import React from 'react';
 import { NoirBrowser } from '../utils/noir/noirBrowser';
-import { input } from '../input';
+import mainCircuit from '../circuits/main/target/main.json';
+import recursiveCircuit from '../circuits/recursion/target/recursion.json';
 
 import { ThreeDots } from 'react-loader-spinner';
 
 function Component() {
-  const [userInput, setUserInput] = useState({ x: '', y: '' });
+  const [input, setInput] = useState({ x: '', y: '' });
   const [pending, setPending] = useState(false);
-  const [proof, setProof] = useState(Uint8Array.from([]));
-  const [verification, setVerification] = useState(false);
-  const [noir, setNoir] = useState(new NoirBrowser());
+  const [mainNoir, setMainNoir] = useState(new NoirBrowser(mainCircuit));
+  const [mainProof, setMainProof] = useState({ proof: Uint8Array.from([]), serialized: [''] });
+  const [mainVerification, setMainVerification] = useState({
+    verified: false,
+    vk: [''],
+    vkHash: '',
+  });
+
+  const [recursiveNoir, setRecursiveNoir] = useState(new NoirBrowser(recursiveCircuit));
+  const [recursiveProof, setRecursiveProof] = useState({
+    proof: Uint8Array.from([]),
+    serialized: [''],
+  });
+  const [recursiveVerification, setRecursiveVerification] = useState({
+    verified: false,
+    vk: [''],
+    vkHash: '',
+  });
 
   // Handles input state
   const handleChange = e => {
     e.preventDefault();
-    setUserInput({ ...userInput, [e.target.name]: e.target.value });
+    setInput({ ...input, [e.target.name]: e.target.value });
   };
 
   // Calculates proof
-  const calculateProof = async () => {
+  const calculateMainProof = async () => {
     setPending(true);
     try {
-      console.time('generateProof');
-      const witness = await noir.generateWitness(input);
-      const proof = await noir.generateProof(witness);
-      setProof(proof);
-      console.timeEnd('generateProof');
+      console.log('generate main proof');
+      const witness = await mainNoir.generateWitness(['0x' + input.x, '0x' + input.y]);
+      const { proof, serialized } = await mainNoir.generateProof(witness, 1, false);
+      setMainProof({ proof, serialized });
+      console.log('main proof generation end');
     } catch (err) {
       console.log(err);
-      toast.error('Error generating proof');
+      toast.error('Error generating main proof');
     }
 
     setPending(false);
   };
 
-  const verifyProof = async () => {
-    // only launch if we do have an acir and a proof to verify
-    if (proof) {
-      try {
-        console.log(proof);
-        const verification = await noir.verifyProof(proof);
-        setVerification(verification);
-        toast.success('Proof verified!');
-      } catch (err) {
-        console.log(err);
-        toast.error('Error verifying your proof');
-      } finally {
-        noir.destroy();
-      }
+  // Calculates proof
+  const calculateRecursiveProof = async () => {
+    setPending(true);
+    const recInput = [
+      ...mainVerification.vk.map(e => e.toString()),
+      ...mainProof.serialized,
+      '0x0000000000000000000000000000000000000000000000000000000000000002',
+      mainVerification.vkHash.toString(),
+      ...Array(16).fill('0x0000000000000000000000000000000000000000000000000000000000000000'),
+    ];
+
+    console.log('generating recursive proof');
+    console.log('input');
+    console.log('LENGTH', recInput.length);
+
+    const witness = await recursiveNoir.generateWitness(recInput);
+    console.log('witness generated');
+    const { proof, serialized } = await recursiveNoir.generateProof(witness, 0, true);
+    setRecursiveProof({ proof, serialized });
+    console.log('recursive proof generation end');
+
+    setPending(false);
+  };
+
+  const verifyProof = async (noirInstance: NoirBrowser, proof: Uint8Array) => {
+    try {
+      const { verified, vk, vkHash } = await noirInstance.verifyProof(proof, false);
+      setMainVerification({ verified, vk, vkHash });
+      toast.success('Proof verified!');
+    } catch (err) {
+      console.log(err);
+      toast.error('Error verifying your proof');
+    } finally {
+      mainNoir.destroy();
     }
   };
 
-  // Verifier the proof if there's one in state
+  // Verify the main proof
   useEffect(() => {
-    if (proof.length > 0) {
-      verifyProof();
+    if (mainProof.proof.length > 0) {
+      console.log('verifying main proof');
+      verifyProof(mainNoir, mainProof.proof);
     }
-  }, [proof]);
+  }, [mainProof]);
+
+  // Prove the recursive proof
+  useEffect(() => {
+    if (mainVerification.verified) {
+      console.log('calculating recursive proof');
+      calculateRecursiveProof();
+    }
+  }, [mainVerification]);
 
   const initNoir = async () => {
     setPending(true);
 
-    await noir.init();
-    setNoir(noir);
-
+    setMainNoir(mainNoir);
+    setRecursiveNoir(recursiveNoir);
+    await mainNoir.init();
+    await recursiveNoir.init();
     setPending(false);
   };
 
   useEffect(() => {
     initNoir();
-  }, [proof]);
+  }, [mainProof]);
 
   return (
     <div className="gameContainer">
       <h1>Example starter</h1>
       <h2>This circuit checks that x and y are different</h2>
       <p>Try it!</p>
-      <input name="x" type={'text'} onChange={handleChange} value={userInput.x} />
-      <input name="y" type={'text'} onChange={handleChange} value={userInput.y} />
-      <button onClick={calculateProof}>Calculate proof</button>
+      <input name="x" type={'text'} onChange={handleChange} value={input.x} />
+      <input name="y" type={'text'} onChange={handleChange} value={input.y} />
+      <button onClick={calculateMainProof}>Calculate proof</button>
       {pending && <ThreeDots wrapperClass="spinner" color="#000000" height={100} width={100} />}
     </div>
   );

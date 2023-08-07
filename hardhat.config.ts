@@ -34,7 +34,7 @@ const config: HardhatUserConfig = {
     },
   },
   paths: {
-    sources: './circuits/contract/recursion',
+    sources: './circuits',
   },
 };
 

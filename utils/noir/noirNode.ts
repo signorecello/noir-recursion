@@ -1,5 +1,3 @@
-// TODO use the JSON directly for now
-// import { compile } from '@noir-lang/noir_wasm';
 import { decompressSync } from 'fflate';
 import {
   BarretenbergApiAsync,
@@ -9,10 +7,9 @@ import {
 } from '@aztec/bb.js/dest/node/index.js';
 import { executeCircuit, compressWitness } from '@noir-lang/acvm_js';
 import { ethers } from 'ethers'; // I'm lazy so I'm using ethers to pad my input
-import circuit from '../../circuits/target/noirstarter.json';
-import { Ptr } from '@aztec/bb.js/dest/node/types';
-
+import { Ptr, Fr } from '@aztec/bb.js/dest/node/types';
 export class NoirNode {
+  circuit: any;
   acir: string = '';
   acirBuffer: Uint8Array = Uint8Array.from([]);
   acirBufferUncompressed: Uint8Array = Uint8Array.from([]);
@@ -20,15 +17,15 @@ export class NoirNode {
   api = {} as BarretenbergApiAsync;
   acirComposer = {} as Ptr;
 
+  constructor(circuit: Object) {
+    this.circuit = circuit;
+  }
+
   async init() {
-    // TODO disabled until we get a fix for std
-    // const compiled_noir = compile({
-    //   entry_point: `${__dirname}/../../circuits/src/main.nr`,
-    // });
-    this.acirBuffer = Buffer.from(circuit.bytecode, 'base64');
+    this.acirBuffer = Buffer.from(this.circuit.bytecode, 'base64');
     this.acirBufferUncompressed = decompressSync(this.acirBuffer);
 
-    this.api = await newBarretenbergApiAsync(8);
+    this.api = await newBarretenbergApiAsync(16);
 
     const [exact, total, subgroup] = await this.api.acirGetCircuitSizes(
       this.acirBufferUncompressed,
@@ -45,34 +42,43 @@ export class NoirNode {
     this.acirComposer = await this.api.acirNewAcirComposer(subgroupSize);
   }
 
-  async generateWitness(input: string[]): Promise<Uint8Array> {
+  async generateWitness(input: any): Promise<Uint8Array> {
     const initialWitness = new Map<number, string>();
     for (let i = 1; i <= input.length; i++) {
       initialWitness.set(i, input[i - 1]);
     }
+    console.log(initialWitness);
 
     const witnessMap = await executeCircuit(this.acirBuffer, initialWitness, () => {
       throw Error('unexpected oracle');
     });
 
     const witnessBuff = compressWitness(witnessMap);
+
     return witnessBuff;
   }
 
-  async generateProof(witness: Uint8Array) {
+  async generateProof(witness: Uint8Array, numOfInputs: number = 0, recursive: boolean) {
     const proof = await this.api.acirCreateProof(
       this.acirComposer,
       this.acirBufferUncompressed,
       decompressSync(witness),
-      true,
+      recursive,
     );
-    return proof;
+
+    const serialized = await this.api.acirSerializeProofIntoFields(
+      this.acirComposer,
+      proof,
+      numOfInputs,
+    );
+    return { proof, serialized: serialized.map(p => p.toString()) };
   }
 
-  async verifyProof(proof: Uint8Array) {
-    // await this.api.acirInitProvingKey(this.acirComposer, this.acirBufferUncompressed);
-    const verified = await this.api.acirVerifyProof(this.acirComposer, proof, true);
-    return verified;
+  async verifyProof(proof: Uint8Array, recursive: boolean) {
+    const verified = await this.api.acirVerifyProof(this.acirComposer, proof, recursive);
+    const vk = await this.api.acirSerializeVerificationKeyIntoFields(this.acirComposer);
+
+    return { verified, vk: vk[0].map(vk => vk.toString()), vkHash: vk[1].toString() };
   }
 
   async destroy() {

@@ -3,16 +3,22 @@ import { ethers } from 'hardhat';
 
 async function main() {
   // Deploy the verifier contract
-  const Verifier = await ethers.getContractFactory('UltraVerifier');
-  const verifier = await Verifier.deploy();
+  const MainVerifier = await ethers.getContractFactory(
+    'circuits/main/contract/main/plonk_vk.sol:UltraVerifier',
+  );
+  const mainVerifier = await MainVerifier.deploy();
+  const mainVerifierAddr = await mainVerifier.deployed();
 
-  // Get the address of the deployed verifier contract
-  const verifierAddr = await verifier.deployed();
-
+  const RecursiveVerifier = await ethers.getContractFactory(
+    'circuits/recursion/contract/recursion/plonk_vk.sol:UltraVerifier',
+  );
+  const recursiveVerifier = await RecursiveVerifier.deploy();
+  const recursiveVerifierAddr = await recursiveVerifier.deployed();
   // Create a config object
   const config = {
     chainId: ethers.provider.network.chainId,
-    verifier: verifierAddr.address,
+    mainVerifier: mainVerifierAddr.address,
+    recursiveVerifier: recursiveVerifierAddr.address,
   };
 
   // Print the config
