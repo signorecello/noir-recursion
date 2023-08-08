@@ -42,6 +42,7 @@ export class NoirBrowser {
     );
 
     this.acirComposer = await this.api.acirNewAcirComposer(subgroupSize);
+    await this.api.acirInitProvingKey(this.acirComposer, this.acirBufferUncompressed);
   }
 
   async generateWitness(input: any): Promise<Uint8Array> {
@@ -50,11 +51,9 @@ export class NoirBrowser {
       initialWitness.set(i, ethers.utils.hexZeroPad(input[i - 1], 32));
     }
 
-    console.log(initialWitness);
     const witnessMap = await executeCircuit(this.acirBuffer, initialWitness, () => {
       throw Error('unexpected oracle');
     });
-    console.log(witnessMap.size);
 
     const witnessBuff = compressWitness(witnessMap);
 
@@ -74,16 +73,16 @@ export class NoirBrowser {
       proof,
       numOfInputs,
     );
+
     return { proof, serialized: serialized.map(p => p.toString()) };
   }
 
   async verifyProof(proof: Uint8Array, recursive: boolean) {
-    await this.api.acirInitProvingKey(this.acirComposer, this.acirBufferUncompressed);
-    const verified = await this.api.acirVerifyProof(this.acirComposer, proof, recursive);
-    const vk = await this.api.acirSerializeVerificationKeyIntoFields(this.acirComposer);
+    await this.api.acirInitVerificationKey(this.acirComposer);
 
-    const vkArr = await this.api.acirGetVerificationKey(this.acirComposer);
-    await this.api.acirLoadVerificationKey(this.acirComposer, new RawBuffer(vkArr));
+    const verified = await this.api.acirVerifyProof(this.acirComposer, proof, recursive);
+
+    const vk = await this.api.acirSerializeVerificationKeyIntoFields(this.acirComposer);
     return { verified, vk: vk[0].map(vk => vk.toString()), vkHash: vk[1].toString() };
   }
 

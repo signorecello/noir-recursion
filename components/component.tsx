@@ -79,8 +79,11 @@ function Component() {
 
   const verifyProof = async (noirInstance: NoirBrowser, proof: Uint8Array) => {
     try {
+      console.log('verifying proof, instance:', noirInstance);
       const { verified, vk, vkHash } = await noirInstance.verifyProof(proof, false);
+      console.log('verified?', verified);
       setMainVerification({ verified, vk, vkHash });
+      noirInstance.destroy();
       toast.success('Proof verified!');
     } catch (err) {
       console.log(err);
@@ -107,6 +110,7 @@ function Component() {
   }, [mainVerification]);
 
   const initNoir = async () => {
+    console.log('init');
     setPending(true);
 
     setMainNoir(mainNoir);
@@ -118,7 +122,7 @@ function Component() {
 
   useEffect(() => {
     initNoir();
-  }, [mainProof]);
+  }, []);
 
   return (
     <div className="gameContainer">
