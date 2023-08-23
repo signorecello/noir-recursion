@@ -52,6 +52,8 @@ describe('It compiles noir program code, receiving circuit bytes and abi object.
       vkHash.toString(),
       ...Array(16).fill('0x0000000000000000000000000000000000000000000000000000000000000000'),
     ];
+
+    noir.destroy();
   });
 
   it('Should verify proof within a proof', async () => {
@@ -64,7 +66,8 @@ describe('It compiles noir program code, receiving circuit bytes and abi object.
     expect(proof instanceof Uint8Array).to.be.true;
     console.log(proof);
 
-    // const { verified } = await noir.verifyProof(proof, true);
-    // console.log(verified);
+    const { verified } = await noir.verifyProof(proof, true);
+    console.log(verified);
+    noir.destroy();
   });
 });

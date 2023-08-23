@@ -42,7 +42,7 @@ function Component() {
     try {
       console.log('generate main proof');
       const witness = await mainNoir.generateWitness(['0x' + input.x, '0x' + input.y]);
-      const { proof, serialized } = await mainNoir.generateProof(witness, 1, false);
+      const { proof, serialized } = await mainNoir.generateProof(witness, 1, true);
       setMainProof({ proof, serialized });
       console.log('main proof generation end');
     } catch (err) {
@@ -70,17 +70,23 @@ function Component() {
 
     const witness = await recursiveNoir.generateWitness(recInput);
     console.log('witness generated');
-    const { proof, serialized } = await recursiveNoir.generateProof(witness, 0, true);
+    const { proof, serialized } = await recursiveNoir.generateProof(witness, 0, false);
     setRecursiveProof({ proof, serialized });
     console.log('recursive proof generation end');
 
     setPending(false);
+    console.log('proof:', proof);
+    await verifyProof(recursiveNoir, recursiveProof.proof, false);
   };
 
-  const verifyProof = async (noirInstance: NoirBrowser, proof: Uint8Array) => {
+  const verifyProof = async (
+    noirInstance: NoirBrowser,
+    proof: Uint8Array,
+    isRecursive: boolean = false,
+  ) => {
     try {
       console.log('verifying proof, instance:', noirInstance);
-      const { verified, vk, vkHash } = await noirInstance.verifyProof(proof, false);
+      const { verified, vk, vkHash } = await noirInstance.verifyProof(proof, isRecursive);
       console.log('verified?', verified);
       setMainVerification({ verified, vk, vkHash });
       noirInstance.destroy();
@@ -97,7 +103,7 @@ function Component() {
   useEffect(() => {
     if (mainProof.proof.length > 0) {
       console.log('verifying main proof');
-      verifyProof(mainNoir, mainProof.proof);
+      verifyProof(mainNoir, mainProof.proof, true);
     }
   }, [mainProof]);
 

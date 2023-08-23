@@ -40,6 +40,8 @@ export class NoirNode {
     );
 
     this.acirComposer = await this.api.acirNewAcirComposer(subgroupSize);
+    // await this.api.acirInitProvingKey(this.acirComposer, this.acirBufferUncompressed);
+    // const exp = await this.api.binder.wasm.exports();
   }
 
   async generateWitness(input: any): Promise<Uint8Array> {
@@ -75,12 +77,10 @@ export class NoirNode {
   }
 
   async verifyProof(proof: Uint8Array, recursive: boolean) {
-    await this.api.acirInitProvingKey(this.acirComposer, this.acirBufferUncompressed);
-    const verified = await this.api.acirVerifyProof(this.acirComposer, proof, recursive);
+    // await this.api.acirInitVerificationKey(this.acirComposer);
     const vk = await this.api.acirSerializeVerificationKeyIntoFields(this.acirComposer);
+    const verified = await this.api.acirVerifyProof(this.acirComposer, proof, recursive);
 
-    const vkArr = await this.api.acirGetVerificationKey(this.acirComposer);
-    await this.api.acirLoadVerificationKey(this.acirComposer, new RawBuffer(vkArr));
     return { verified, vk: vk[0].map(vk => vk.toString()), vkHash: vk[1].toString() };
   }
 

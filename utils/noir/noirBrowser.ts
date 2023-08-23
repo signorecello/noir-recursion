@@ -42,7 +42,8 @@ export class NoirBrowser {
     );
 
     this.acirComposer = await this.api.acirNewAcirComposer(subgroupSize);
-    await this.api.acirInitProvingKey(this.acirComposer, this.acirBufferUncompressed);
+    // await this.api.acirInitProvingKey(this.acirComposer, this.acirBufferUncompressed);
+    // const exp = await this.api.binder.wasm.exports();
   }
 
   async generateWitness(input: any): Promise<Uint8Array> {
@@ -78,7 +79,7 @@ export class NoirBrowser {
   }
 
   async verifyProof(proof: Uint8Array, recursive: boolean) {
-    await this.api.acirInitVerificationKey(this.acirComposer);
+    // await this.api.acirInitVerificationKey(this.acirComposer);
 
     const verified = await this.api.acirVerifyProof(this.acirComposer, proof, recursive);
 
