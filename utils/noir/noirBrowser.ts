@@ -1,10 +1,6 @@
 import { decompressSync } from 'fflate';
-import {
-  BarretenbergApiAsync,
-  Crs,
-  newBarretenbergApiAsync,
-  RawBuffer,
-} from '@aztec/bb.js/dest/browser/index.js';
+// @ts-ignore
+import { Barretenberg, Crs, RawBuffer } from '@aztec/bb.js';
 import initACVM, { executeCircuit, compressWitness } from '@noir-lang/acvm_js';
 import { ethers } from 'ethers'; // I'm lazy so I'm using ethers to pad my input
 import { Ptr, Fr } from '@aztec/bb.js/dest/node/types';
@@ -12,10 +8,10 @@ import { Ptr, Fr } from '@aztec/bb.js/dest/node/types';
 export class NoirBrowser {
   circuit: any;
   acir: string = '';
-  acirBuffer: Uint8Array = Uint8Array.from([]);
+  acirBufferCompressed: Uint8Array = Uint8Array.from([]);
   acirBufferUncompressed: Uint8Array = Uint8Array.from([]);
 
-  api = {} as BarretenbergApiAsync;
+  api = {} as Barretenberg;
   acirComposer = {} as Ptr;
 
   constructor(circuit: Object) {
@@ -24,10 +20,10 @@ export class NoirBrowser {
 
   async init() {
     await initACVM();
-    this.acirBuffer = Buffer.from(this.circuit.bytecode, 'base64');
-    this.acirBufferUncompressed = decompressSync(this.acirBuffer);
+    this.acirBufferCompressed = Buffer.from(this.circuit.bytecode, 'base64');
+    this.acirBufferUncompressed = decompressSync(this.acirBufferCompressed);
 
-    this.api = await newBarretenbergApiAsync(4);
+    this.api = await Barretenberg.new(4);
 
     const [exact, total, subgroup] = await this.api.acirGetCircuitSizes(
       this.acirBufferUncompressed,
@@ -52,7 +48,7 @@ export class NoirBrowser {
       initialWitness.set(i, ethers.utils.hexZeroPad(input[i - 1], 32));
     }
 
-    const witnessMap = await executeCircuit(this.acirBuffer, initialWitness, () => {
+    const witnessMap = await executeCircuit(this.acirBufferCompressed, initialWitness, () => {
       throw Error('unexpected oracle');
     });
 

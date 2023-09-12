@@ -2,15 +2,15 @@
 # yarn lockfile v1
 
 
-"@aztec/bb.js@0.4.2":
-  version "0.4.2"
-  resolved "https://registry.yarnpkg.com/@aztec/bb.js/-/bb.js-0.4.2.tgz#92066eef5a191319a86d935d98091f089e184763"
-  integrity sha512-8uF7yYeaGP41g3TVcFwALJXVkXmeOn0yjAPj5u/9bVF7nE6BeCnGsqfy8GvGBbaDHhQlpF4cnDIzE6tA73h7Sg==
+"@aztec/bb.js@0.6.7":
+  version "0.6.7"
+  resolved "https://registry.yarnpkg.com/@aztec/bb.js/-/bb.js-0.6.7.tgz#e3c58f05c7928a5919aed00f03210a18e01cdcb3"
+  integrity sha512-ZVytRcpsSZYgVyNbHQoPNoAEumxxdmXHmW9eRB4WWTfhzhmaF+VCrShg3RQt5x5HOMZbS+ukw7/cSf+WBiMC/Q==
   dependencies:
     comlink "^4.4.1"
     commander "^10.0.1"
     debug "^4.3.4"
-    idb-keyval "^6.2.1"
+    tslib "^2.4.0"
 
 "@babel/code-frame@^7.22.10", "@babel/code-frame@^7.22.5":
   version "7.22.10"
@@ -3359,11 +3359,6 @@ iconv-lite@0.4.24:
   integrity sha512-v3MXnZAcvnywkTUEZomIActle7RXXeedOR31wwl7VlyoXO4Qi9arvSenNQWne1TcRwhCL1HwLI21bEqdpj8/rA==
   dependencies:
     safer-buffer ">= 2.1.2 < 3"
-
-idb-keyval@^6.2.1:
-  version "6.2.1"
-  resolved "https://registry.npmjs.org/idb-keyval/-/idb-keyval-6.2.1.tgz"
-  integrity sha512-8Sb3veuYCyrZL+VBt9LJfZjLUPWVvqn8tG28VqYNFCo43KHcKuq+b4EiXGeuaLAQWL2YmyDgMp2aSpH9JHsEQg==
 
 ieee754@^1.2.1:
   version "1.2.1"
