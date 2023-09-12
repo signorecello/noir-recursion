@@ -76,7 +76,7 @@ function Component() {
 
     setPending(false);
     console.log('proof:', proof);
-    await verifyProof(recursiveNoir, recursiveProof.proof, false);
+    await verifyProof(recursiveNoir, recursiveProof.proof, true);
   };
 
   const verifyProof = async (
