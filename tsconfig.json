@@ -2,7 +2,11 @@
   "compilerOptions": {
     "target": "es2020",
     "useDefineForClassFields": true,
-    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "lib": [
+      "DOM",
+      "DOM.Iterable",
+      "ESNext"
+    ],
     "allowJs": false,
     "skipLibCheck": true,
     "esModuleInterop": true,
@@ -15,11 +19,20 @@
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "preserve",
-    "noImplicitAny": true,
+    "noImplicitAny": false,
     "strictNullChecks": true,
     "incremental": true
   },
-  "exclude": ["dist", "node_modules"],
-  "include": ["./test", "./src", "./scripts"],
-  "files": ["./hardhat.config.ts"]
+  "exclude": [
+    "dist",
+    "node_modules"
+  ],
+  "include": [
+    "./test",
+    "./src",
+    "./scripts"
+  ],
+  "files": [
+    "./hardhat.config.ts"
+  ]
 }
