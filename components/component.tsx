@@ -36,10 +36,20 @@ function Component() {
     setInput({ ...input, [e.target.name]: e.target.value });
   };
 
-  // Calculates the inner proof. This will be verified in another Noir circuit.
+  // This method is currently doing multiple things:
   //
-  // This proof does not have any inputs related to recursion.
-  // The variable `y` is public.
+  // 1. Compute and verify an inner proof.
+  // 2. Compute and verify an outer proof using the inner proof as input.
+  //
+  // Note:
+  // - This method does not take input from the textbox on the site, we
+  // are currently hardcoding these for easier debugging.
+  // - This method is not generalized for all inner circuits, see `numPublicInputs`
+  // - VerifyInnerProof is not strictly needed, it is kept here to be instructive.
+  // - If the outputAggregationObject is not returned, this causes problems in bb,
+  // it seems that bb assumes that the witness indices for these are always available.
+  // We should also see what happens if its not returned from Noir and also not added 
+  // in the initial witnesses.
   const calculateMainProof = async () => {
     setPending(true);
     try {
