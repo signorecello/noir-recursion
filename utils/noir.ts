@@ -64,8 +64,8 @@ export class Noir {
   // generate the proof using components that will make the proof 
   // easier to verify in a circuit.
   async generateInnerProof(witness: Uint8Array) {
-    const recursive = true;
-    return this.generateProof(witness, recursive);
+    const makeEasyToVerifyInCircuit = true;
+    return this.generateProof(witness, makeEasyToVerifyInCircuit);
   }
 
   // Generates artifacts that will be passed to the circuit that will verify this proof.
@@ -98,11 +98,11 @@ export class Noir {
   // The settings for this proof are the same as the settings for a "normal" proof
   // ie one that is not in the recursive setting.
   async generateOuterProof(witness: Uint8Array) {
-    const recursive = false;
-    return this.generateProof(witness, recursive);
+    const makeEasyToVerifyInCircuit = false;
+    return this.generateProof(witness, makeEasyToVerifyInCircuit);
   }
 
-  async generateProof(witness: Uint8Array, recursive: boolean) {
+  async generateProof(witness: Uint8Array, makeEasyToVerifyInCircuit: boolean) {
     console.log("Creating outer proof");
 
     const decompressedWitness = decompressSync(witness);
@@ -111,7 +111,7 @@ export class Noir {
       this.acirComposer,
       this.acirBufferUncompressed,
       decompressedWitness,
-      recursive,
+      makeEasyToVerifyInCircuit,
     );
 
 
@@ -119,18 +119,18 @@ export class Noir {
   }
 
   async verifyInnerProof(proof: Uint8Array) {
-    const recursive = true;
-    return this.verifyProof(proof, recursive);
+    const makeEasyToVerifyInCircuit = true;
+    return this.verifyProof(proof, makeEasyToVerifyInCircuit);
   }
 
   async verifyOuterProof(proof: Uint8Array) {
-    const recursive = false;
-    return this.verifyProof(proof, recursive);
+    const makeEasyToVerifyInCircuit = false;
+    return this.verifyProof(proof, makeEasyToVerifyInCircuit);
   }
 
-  async verifyProof(proof: Uint8Array, recursive: boolean) {
+  async verifyProof(proof: Uint8Array, makeEasyToVerifyInCircuit: boolean) {
     await this.api.acirInitVerificationKey(this.acirComposer);
-    const verified = await this.api.acirVerifyProof(this.acirComposer, proof, recursive);
+    const verified = await this.api.acirVerifyProof(this.acirComposer, proof, makeEasyToVerifyInCircuit);
     return verified;
   }
 
