@@ -3,7 +3,7 @@ import { decompressSync } from 'fflate';
 import { Barretenberg, Crs, RawBuffer } from '@aztec/bb.js';
 import initACVM, { executeCircuit, compressWitness } from '@noir-lang/acvm_js';
 import { ethers } from 'ethers'; // I'm lazy so I'm using ethers to pad my input
-import { Ptr, } from '@aztec/bb.js/dest/types';
+import { Ptr } from '@aztec/bb.js/dest/browser/types';
 
 export class Noir {
   circuit: any;
@@ -61,7 +61,7 @@ export class Noir {
   // in another circuit.
   //
   // We set isRecursive to true, which will tell the backend to
-  // generate the proof using components that will make the proof 
+  // generate the proof using components that will make the proof
   // easier to verify in a circuit.
   async generateInnerProof(witness: Uint8Array) {
     const makeEasyToVerifyInCircuit = true;
@@ -75,21 +75,24 @@ export class Noir {
   //
   // The number of public inputs denotes how many public inputs are in the inner proof.
   async generateInnerProofArtifacts(proof: Uint8Array, numOfPublicInputs: number = 0) {
-    console.log("serializing proof");
+    console.log('serializing proof');
     const proofAsFields = await this.api.acirSerializeProofIntoFields(
       this.acirComposer,
       proof,
       numOfPublicInputs,
     );
-    console.log("proof serialized");
-
-    console.log("serializing vk");
+    console.log('proof serialized');
+    console.log('serializing vk');
     await this.api.acirInitVerificationKey(this.acirComposer);
     // Note: If you don't init verification key, `acirSerializeVerificationKeyIntoFields`` will just hang on serialization
     const vk = await this.api.acirSerializeVerificationKeyIntoFields(this.acirComposer);
-    console.log("vk serialized");
+    console.log('vk serialized');
 
-    return { proofAsFields: proofAsFields.map(p => p.toString()), vkAsFields: vk[0].map(vk => vk.toString()), vkHash: vk[1].toString() };
+    return {
+      proofAsFields: proofAsFields.map(p => p.toString()),
+      vkAsFields: vk[0].map(vk => vk.toString()),
+      vkHash: vk[1].toString(),
+    };
   }
 
   // Generate an outer proof. This is the proof for the circuit which will verify
@@ -103,7 +106,7 @@ export class Noir {
   }
 
   async generateProof(witness: Uint8Array, makeEasyToVerifyInCircuit: boolean) {
-    console.log("Creating outer proof");
+    console.log('Creating outer proof');
 
     const decompressedWitness = decompressSync(witness);
 
@@ -113,7 +116,6 @@ export class Noir {
       decompressedWitness,
       makeEasyToVerifyInCircuit,
     );
-
 
     return proof;
   }
@@ -125,15 +127,21 @@ export class Noir {
 
   async verifyOuterProof(proof: Uint8Array) {
     const makeEasyToVerifyInCircuit = false;
-    return this.verifyProof(proof, makeEasyToVerifyInCircuit);
+    console.log('veirfying outer proof');
+    const verified = await this.verifyProof(proof, makeEasyToVerifyInCircuit);
+    console.log(verified);
+    return verified;
   }
 
   async verifyProof(proof: Uint8Array, makeEasyToVerifyInCircuit: boolean) {
     await this.api.acirInitVerificationKey(this.acirComposer);
-    const verified = await this.api.acirVerifyProof(this.acirComposer, proof, makeEasyToVerifyInCircuit);
+    const verified = await this.api.acirVerifyProof(
+      this.acirComposer,
+      proof,
+      makeEasyToVerifyInCircuit,
+    );
     return verified;
   }
-
 
   async destroy() {
     await this.api.destroy();

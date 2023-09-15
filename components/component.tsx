@@ -6,29 +6,15 @@ import { Noir } from '../utils/noir';
 import mainCircuit from '../circuits/main/target/main.json';
 import recursiveCircuit from '../circuits/recursion/target/recursion.json';
 
-import { ThreeDots } from 'react-loader-spinner';
+import { ethers } from 'ethers';
 
 function Component() {
   const [input, setInput] = useState({ x: '', y: '' });
-  const [pending, setPending] = useState(false);
-  const [mainNoir, setMainNoir] = useState(new Noir(mainCircuit));
-  const [mainProof, setMainProof] = useState({ proof: Uint8Array.from([]), serialized: [''] });
-  const [mainVerification, setMainVerification] = useState({
-    verified: false,
-    vk: [''],
-    vkHash: '',
-  });
 
+  const [mainNoir, setMainNoir] = useState(new Noir(mainCircuit));
   const [recursiveNoir, setRecursiveNoir] = useState(new Noir(recursiveCircuit));
-  const [recursiveProof, setRecursiveProof] = useState({
-    proof: Uint8Array.from([]),
-    serialized: [''],
-  });
-  const [recursiveVerification, setRecursiveVerification] = useState({
-    verified: false,
-    vk: [''],
-    vkHash: '',
-  });
+
+  const [recursiveProof, setRecursiveProof] = useState({} as any);
 
   // Handles input state
   const handleChange = e => {
@@ -36,28 +22,13 @@ function Component() {
     setInput({ ...input, [e.target.name]: e.target.value });
   };
 
-  // This method is currently doing multiple things:
-  //
-  // 1. Compute and verify an inner proof.
-  // 2. Compute and verify an outer proof using the inner proof as input.
-  //
-  // Note:
-  // - This method does not take input from the textbox on the site, we
-  // are currently hardcoding these for easier debugging.
-  // - This method is not generalized for all inner circuits, see `numPublicInputs`
-  // - VerifyInnerProof is not strictly needed, it is kept here to be instructive.
-  // - If the outputAggregationObject is not returned, this causes problems in bb,
-  // it seems that bb assumes that the witness indices for these are always available.
-  // We should also see what happens if its not returned from Noir and also not added 
-  // in the initial witnesses.
-  const calculateMainProof = async () => {
-    setPending(true);
-    try {
+  const calculateProof = async () => {
+    const proofGeneration = new Promise(async (resolve, reject) => {
       console.log('generating witnesses for inner proof');
       // Generates the intermediate witness values from the initial witness values
       // that are fed in via the text box.
-      const xValue = '0x0000000000000000000000000000000000000000000000000000000000000001';
-      const yValue = '0x0000000000000000000000000000000000000000000000000000000000000002';
+      const xValue = ethers.utils.hexZeroPad(ethers.utils.hexlify(BigInt(input.x)), 32);
+      const yValue = ethers.utils.hexZeroPad(ethers.utils.hexlify(BigInt(input.y)), 32);
 
       const witness = await mainNoir.generateWitness([xValue, yValue]);
       console.log('witnesses generated: ', witness);
@@ -68,7 +39,7 @@ function Component() {
       // Generate the proof based off of the intermediate witness values.
       console.log('generating inner proof');
       const innerProof = await mainNoir.generateInnerProof(witness);
-      console.log('inner proof generated: ', mainProof);
+      console.log('inner proof generated: ', innerProof);
 
       // Verify the same proof, not inside of a circuit
       console.log('verifying inner proof (out of circuit)');
@@ -76,13 +47,18 @@ function Component() {
       console.log('inner proof verified as', verified);
 
       // Now we will take that inner proof and verify it in an outer proof.
-      console.log("Preparing input for outer proof");
-      const { proofAsFields, vkAsFields, vkHash } = await mainNoir.generateInnerProofArtifacts(innerProof, numPublicInputs);
+      console.log('Preparing input for outer proof');
+      const { proofAsFields, vkAsFields, vkHash } = await mainNoir.generateInnerProofArtifacts(
+        innerProof,
+        numPublicInputs,
+      );
 
-      console.log("Proof as Fields", proofAsFields);
-      console.log("Vk as Fields", vkAsFields);
-      console.log("Vk Hash", vkHash);
-      const aggregationObject = Array(16).fill('0x0000000000000000000000000000000000000000000000000000000000000000');
+      console.log('Proof as Fields', proofAsFields);
+      console.log('Vk as Fields', vkAsFields);
+      console.log('Vk Hash', vkHash);
+      const aggregationObject = Array(16).fill(
+        '0x0000000000000000000000000000000000000000000000000000000000000000',
+      );
       const recInput = [
         ...vkAsFields.map(e => e.toString()),
         ...proofAsFields,
@@ -91,51 +67,63 @@ function Component() {
         ...aggregationObject,
       ];
 
-      console.log("generate witnesses for outer circuit");
+      console.log('generate witnesses for outer circuit');
       const outerWitnesses = await recursiveNoir.generateWitness(recInput);
-      console.log("witnesses generated for outer circuit", outerWitnesses);
+      console.log('witnesses generated for outer circuit', outerWitnesses);
 
-      console.log("generating outer proof");
+      console.log('generating outer proof');
       const proof = await recursiveNoir.generateOuterProof(outerWitnesses);
-      console.log("Outer proof generated: ", proof);
+      console.log('Outer proof generated: ', proof);
+      setRecursiveProof(proof);
+      resolve(proof);
+    });
 
-      console.log("Verifying outer proof");
-
-      const outerProofVerified = await recursiveNoir.verifyOuterProof(proof);
-      console.log("Outer proof verified as ", outerProofVerified);
-
-    } catch (err) {
-      console.log(err);
-      toast.error('Error generating main proof');
-    }
-
-    setPending(false);
+    toast.promise(proofGeneration, {
+      pending: 'Generating proof',
+      success: 'Proof generated',
+      error: 'Error generating proof',
+    });
   };
-  // Verify the main proof
-  // useEffect(() => {
-  //   if (mainProof.proof.length > 0) {
-  //     console.log('verifying main proof');
-  //     verifyProof(mainNoir, mainProof.proof, true);
-  //   }
-  // }, [mainProof]);
 
-  // Prove the recursive proof
-  useEffect(() => {
-    if (mainVerification.verified) {
-      console.log('calculating recursive proof');
-      // calculateRecursiveProof();
+  const verifyProof = async () => {
+    if (recursiveProof) {
+      const proofVerification = new Promise(async (resolve, reject) => {
+        const verification = await recursiveNoir.verifyOuterProof(recursiveProof);
+        console.log('Proof verified as', verification);
+        resolve(verification);
+      });
+
+      toast.promise(proofVerification, {
+        pending: 'Verifying proof',
+        success: 'Proof verified',
+        error: 'Error verifying proof',
+      });
     }
-  }, [mainVerification]);
+  };
+
+  // Verifier the proof if there's one in state
+  useEffect(() => {
+    if (recursiveProof.length > 0) {
+      verifyProof();
+
+      return () => {
+        console.log('unmounting');
+        mainNoir.destroy();
+        recursiveNoir.destroy();
+      };
+    }
+  }, [recursiveProof]);
 
   const initNoir = async () => {
-    console.log('init');
-    setPending(true);
-
     setMainNoir(mainNoir);
     setRecursiveNoir(recursiveNoir);
-    await mainNoir.init();
-    await recursiveNoir.init();
-    setPending(false);
+
+    const initFunctions = Promise.all([mainNoir.init(), recursiveNoir.init()]);
+    toast.promise(initFunctions, {
+      pending: 'Initializing circuits',
+      success: 'Circuits initialized',
+      error: 'Error initializing circuits',
+    });
   };
 
   useEffect(() => {
@@ -149,8 +137,7 @@ function Component() {
       <p>Try it!</p>
       <input name="x" type={'text'} onChange={handleChange} value={input.x} />
       <input name="y" type={'text'} onChange={handleChange} value={input.y} />
-      <button onClick={calculateMainProof}>Calculate proof</button>
-      {pending && <ThreeDots wrapperClass="spinner" color="#000000" height={100} width={100} />}
+      <button onClick={calculateProof}>Calculate proof</button>
     </div>
   );
 }
